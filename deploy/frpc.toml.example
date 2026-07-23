@@ -1,0 +1,11 @@
+serverAddr = "your-frps.example.com"
+serverPort = 7000
+auth.method = "token"
+auth.token = "fill-locally"
+
+[[proxies]]
+name = "mio-core"
+type = "http"
+localIP = "127.0.0.1"
+localPort = 8787
+customDomains = ["mio.example.com"]
