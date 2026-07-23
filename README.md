@@ -1,5 +1,8 @@
 # Mio Core
 
+完整安装、配置、成员使用、内网穿透、备份恢复与故障排查，请阅读
+[《Mio Core 详细使用手册》](docs/USER_GUIDE.zh-CN.md)。
+
 Mio Core 是 Music Mizu 的私人运营内核：受邀用户可以与 Mio 聊天、断点上传音乐，并由后端的确定性流水线整理 Faircamp 目录、构建网站和推送 Git。模型没有文件、路径、Shell、Git 或密钥权限。
 
 ## 架构与边界
