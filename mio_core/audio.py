@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -37,19 +38,37 @@ def _run(args: list[str], timeout: int) -> subprocess.CompletedProcess[str]:
 def defender_scan(path: Path, settings: Settings) -> None:
     if not settings.enable_defender_scan:
         return
+    defender = Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / (
+        r"Windows Defender\MpCmdRun.exe"
+    )
+    if not defender.is_file():
+        platform_root = Path(
+            os.environ.get(
+                "ProgramData",
+                r"C:\ProgramData",
+            )
+        ) / r"Microsoft\Windows Defender\Platform"
+        candidates = sorted(platform_root.glob("*/MpCmdRun.exe"), reverse=True)
+        if not candidates:
+            raise AudioValidationError("找不到 Windows Defender 命令行扫描程序")
+        defender = candidates[0]
     result = _run(
         [
-            "powershell.exe",
-            "-NoProfile",
-            "-NonInteractive",
-            "-Command",
-            "Start-MpScan -ScanType CustomScan -ScanPath $args[0]",
+            str(defender),
+            "-Scan",
+            "-ScanType",
+            "3",
+            "-File",
             str(path),
+            "-DisableRemediation",
         ],
         timeout=300,
     )
     if result.returncode != 0:
-        raise AudioValidationError("Windows Defender 扫描未成功完成")
+        detail = (result.stderr or result.stdout).strip()[-400:]
+        raise AudioValidationError(
+            f"Windows Defender 扫描未成功完成{f'：{detail}' if detail else ''}"
+        )
 
 
 def inspect_audio(path: Path, settings: Settings) -> dict:
