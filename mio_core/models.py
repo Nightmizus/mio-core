@@ -29,12 +29,12 @@ def now() -> datetime:
     return datetime.now(UTC)
 
 
-class Role(str, enum.Enum):
+class Role(enum.StrEnum):
     member = "member"
     admin = "admin"
 
 
-class UploadState(str, enum.Enum):
+class UploadState(enum.StrEnum):
     created = "created"
     uploading = "uploading"
     quarantined = "quarantined"
@@ -42,7 +42,7 @@ class UploadState(str, enum.Enum):
     rejected = "rejected"
 
 
-class JobState(str, enum.Enum):
+class JobState(enum.StrEnum):
     analyzing = "analyzing"
     awaiting_input = "awaiting_input"
     importing = "importing"

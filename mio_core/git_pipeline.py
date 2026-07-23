@@ -72,7 +72,12 @@ class MusicPublisher:
                 finally:
                     fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
-    def _run(self, args: list[str], cwd: Path | None = None, timeout: int | None = None) -> CommandResult:
+    def _run(
+        self,
+        args: list[str],
+        cwd: Path | None = None,
+        timeout: int | None = None,
+    ) -> CommandResult:
         result = subprocess.run(
             args,
             cwd=cwd,

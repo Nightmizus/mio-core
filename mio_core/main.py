@@ -114,7 +114,9 @@ async def health(db: Session = Depends(get_db)) -> dict:
 def bootstrap(body: BootstrapRequest, response: Response, db: Session = Depends(get_db)) -> dict:
     if db.scalar(select(func.count(User.id))) > 0:
         raise HTTPException(status_code=409, detail="管理员已初始化")
-    if not settings.bootstrap_token or not secrets.compare_digest(body.token, settings.bootstrap_token):
+    if not settings.bootstrap_token or not secrets.compare_digest(
+        body.token, settings.bootstrap_token
+    ):
         raise HTTPException(status_code=403, detail="初始化令牌无效")
     try:
         user = User(
@@ -165,7 +167,12 @@ def accept_invite(
 
 
 @app.post("/api/auth/login")
-def login(body: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)) -> dict:
+def login(
+    body: LoginRequest,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+) -> dict:
     key = request.client.host if request.client else "unknown"
     cutoff = datetime.now(UTC) - timedelta(minutes=10)
     attempts = [stamp for stamp in login_attempts.get(key, []) if stamp > cutoff]
@@ -362,7 +369,8 @@ async def job_events(
                 ).all()
                 for item in events:
                     last_id = item.id
-                    yield f"id: {item.id}\ndata: {json.dumps(event_payload(item), ensure_ascii=False)}\n\n"
+                    payload = json.dumps(event_payload(item), ensure_ascii=False)
+                    yield f"id: {item.id}\ndata: {payload}\n\n"
                 state = event_db.scalar(select(Job.state).where(Job.id == job_id))
                 if state in {JobState.live, JobState.failed}:
                     return
@@ -537,7 +545,11 @@ async def chat(
             status_value = "error"
             error_code = type(exc).__name__
             safe_error = "Mio 暂时无法连接模型；音乐上传和发布队列仍可正常工作。"
-            yield f"data: {json.dumps({'type': 'error', 'message': safe_error}, ensure_ascii=False)}\n\n"
+            payload = json.dumps(
+                {"type": "error", "message": safe_error},
+                ensure_ascii=False,
+            )
+            yield f"data: {payload}\n\n"
         finally:
             with next(get_db()) as save_db:
                 if text:

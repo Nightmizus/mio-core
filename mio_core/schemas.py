@@ -36,7 +36,10 @@ class UploadCreateRequest(BaseModel):
     @field_validator("sha256")
     @classmethod
     def valid_hash(cls, value: str | None) -> str | None:
-        if value is not None and (len(value) != 64 or any(c not in "0123456789abcdefABCDEF" for c in value)):
+        invalid = value is not None and (
+            len(value) != 64 or any(c not in "0123456789abcdefABCDEF" for c in value)
+        )
+        if invalid:
             raise ValueError("sha256 must be a 64 character hexadecimal digest")
         return value.lower() if value else None
 

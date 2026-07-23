@@ -1,4 +1,5 @@
 import pytest
+from fastapi import HTTPException
 
 from mio_core.path_security import contained_path, safe_filename, slugify
 from mio_core.security import hash_password, verify_password
@@ -13,7 +14,7 @@ def test_argon2_password_roundtrip():
 
 @pytest.mark.parametrize("name", ["../song.flac", "C:\\song.flac", "song.exe", "NUL.flac"])
 def test_unsafe_upload_names_are_rejected(name):
-    with pytest.raises(Exception):
+    with pytest.raises(HTTPException):
         safe_filename(name)
 
 

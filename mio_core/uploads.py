@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import math
-from pathlib import Path
 
 from fastapi import HTTPException, UploadFile
 from sqlalchemy import func, select

@@ -73,7 +73,11 @@ def inspect_audio(path: Path, settings: Settings) -> dict:
     if result.returncode != 0:
         raise AudioValidationError(f"FFprobe 无法解析音频：{result.stderr[-400:]}")
     payload = json.loads(result.stdout)
-    audio_streams = [stream for stream in payload.get("streams", []) if stream.get("codec_type") == "audio"]
+    audio_streams = [
+        stream
+        for stream in payload.get("streams", [])
+        if stream.get("codec_type") == "audio"
+    ]
     if not audio_streams:
         raise AudioValidationError("文件中没有音频流")
     raw_tags = payload.get("format", {}).get("tags", {}) or {}

@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, field_validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -47,7 +47,9 @@ class Settings(BaseSettings):
     @classmethod
     def local_bind_only(cls, value: str) -> str:
         if value not in {"127.0.0.1", "::1", "localhost"}:
-            raise ValueError("Mio Core must bind to loopback; use a reverse tunnel for public access")
+            raise ValueError(
+                "Mio Core must bind to loopback; use a reverse tunnel for public access"
+            )
         return value
 
     def ensure_directories(self) -> None:

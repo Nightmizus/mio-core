@@ -39,7 +39,7 @@ class KimiCodingProvider(LLMProvider):
                 [{"role": "user", "content": "Reply with OK."}], [], "_health"
             ):
                 return True
-        except (httpx.HTTPError, asyncio.TimeoutError):
+        except (httpx.HTTPError, TimeoutError):
             return False
         return False
 
