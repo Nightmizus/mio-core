@@ -42,7 +42,7 @@ from mio_core.models import (
     WebSession,
     now,
 )
-from mio_core.persona import MIO_SYSTEM_PROMPT
+from mio_core.persona import mio_persona_message
 from mio_core.providers import DeepSeekProvider
 from mio_core.schemas import (
     BootstrapRequest,
@@ -460,10 +460,6 @@ async def chat(
         for item in conversation.messages[-30:]
         if item.role in {"user", "assistant"}
     ]
-    system = {
-        "role": "system",
-        "content": MIO_SYSTEM_PROMPT,
-    }
     tools = [
         {
             "type": "function",
@@ -499,7 +495,7 @@ async def chat(
         prompt_tokens = None
         completion_tokens = None
         try:
-            model_messages = [system, *history]
+            model_messages = [mio_persona_message(), *history]
             capabilities = await provider.capabilities(body.model)
             for _round in range(3):
                 pending_calls: list[dict] = []

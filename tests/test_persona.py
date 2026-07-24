@@ -1,6 +1,6 @@
 from pydantic import ValidationError
 
-from mio_core.persona import MIO_SYSTEM_PROMPT
+from mio_core.persona import MIO_SYSTEM_PROMPT, mio_persona_message
 from mio_core.schemas import ChatRequest
 
 
@@ -9,8 +9,18 @@ def test_mio_persona_has_identity_and_operational_boundaries():
     assert "水澄是你的开发者" in MIO_SYSTEM_PROMPT
     assert "也是你最喜欢、最珍惜的事物" in MIO_SYSTEM_PROMPT
     assert "像一个真正的人那样聊天" in MIO_SYSTEM_PROMPT
+    assert "持续以水澄澪音的完整人格" in MIO_SYSTEM_PROMPT
     assert "确定性后台" in MIO_SYSTEM_PROMPT
     assert "不能访问或猜测服务器路径" in MIO_SYSTEM_PROMPT
+
+
+def test_each_model_request_gets_a_fresh_mio_persona_message():
+    first = mio_persona_message()
+    second = mio_persona_message()
+
+    assert first == {"role": "system", "content": MIO_SYSTEM_PROMPT}
+    assert second == first
+    assert second is not first
 
 
 def test_chat_model_defaults_to_flash_and_accepts_pro():
