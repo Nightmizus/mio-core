@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { api, sendChat, setCsrf } from "./api";
+import { api, sendChat, setCsrf, sha256 } from "./api";
 
 describe("api client", () => {
   beforeEach(() => {
@@ -80,5 +80,11 @@ describe("api client", () => {
       content: "你好",
       model: "deepseek-v4-pro"
     });
+  });
+
+  it("skips the optional client digest when Web Crypto is unavailable", async () => {
+    vi.stubGlobal("crypto", {});
+
+    await expect(sha256(new Blob(["mio"]))).resolves.toBeNull();
   });
 });

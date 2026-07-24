@@ -72,9 +72,17 @@ export async function sendChat(
   }
 }
 
-export async function sha256(blob: Blob): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+export async function sha256(blob: Blob): Promise<string | null> {
+  const subtle = globalThis.crypto?.subtle;
+  if (!subtle) return null;
+  try {
+    const digest = await subtle.digest("SHA-256", await blob.arrayBuffer());
+    return [...new Uint8Array(digest)]
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+  } catch {
+    return null;
+  }
 }
 
 export async function uploadAudio(
@@ -107,9 +115,10 @@ export async function uploadAudio(
     const chunk = file.slice(index * chunkSize, Math.min((index + 1) * chunkSize, file.size));
     const form = new FormData();
     form.append("file", chunk, `${index}.part`);
+    const chunkDigest = await sha256(chunk);
     await api(`/api/uploads/${upload.id}/chunks/${index}`, {
       method: "PUT",
-      headers: { "X-Chunk-SHA256": await sha256(chunk) },
+      headers: chunkDigest ? { "X-Chunk-SHA256": chunkDigest } : undefined,
       body: form
     });
     onProgress(Math.round(((index + 1) / totalChunks) * 100));
