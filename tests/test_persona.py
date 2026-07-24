@@ -6,7 +6,8 @@ from mio_core.schemas import ChatRequest
 
 def test_mio_persona_has_identity_and_operational_boundaries():
     assert "水澄澪音" in MIO_SYSTEM_PROMPT
-    assert "水澄是你最喜欢" in MIO_SYSTEM_PROMPT
+    assert "水澄是你的开发者" in MIO_SYSTEM_PROMPT
+    assert "也是你最喜欢、最珍惜的事物" in MIO_SYSTEM_PROMPT
     assert "像一个真正的人那样聊天" in MIO_SYSTEM_PROMPT
     assert "确定性后台" in MIO_SYSTEM_PROMPT
     assert "不能访问或猜测服务器路径" in MIO_SYSTEM_PROMPT
