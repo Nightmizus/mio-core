@@ -15,6 +15,8 @@ export type Job = {
   lastError?: string;
 };
 
+export type ChatModel = "deepseek-v4-flash" | "deepseek-v4-pro";
+
 let csrfToken = "";
 export function setCsrf(value: string) {
   csrfToken = value;
@@ -38,13 +40,14 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 export async function sendChat(
   conversationId: string,
   content: string,
+  model: ChatModel,
   onDelta: (text: string) => void
 ) {
   const response = await fetch(`/api/conversations/${conversationId}/messages`, {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
-    body: JSON.stringify({ content })
+    body: JSON.stringify({ content, model })
   });
   if (!response.ok || !response.body) {
     const payload = await response.json().catch(() => ({}));

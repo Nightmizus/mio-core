@@ -10,7 +10,7 @@ Mio Core 是 Music Mizu 的私人运营内核：受邀用户可以与 Mio 聊天
 - `mio-web`：只监听 `127.0.0.1:8787`，提供 React 前端、邀请认证、私人聊天、上传和 SSE 状态。
 - `mio-worker`：串行执行隔离区验证、标签/封面读取、Faircamp 构建、路径审计和非强制 Git 推送。
 - SQLite：保存用户、私聊、任务事件、模型审计和发布记录。
-- [Kimi Code](https://www.kimi.com/code/docs/)：OpenAI-compatible 流式接口；API Key 只从 `MIO_LLM_API_KEY` 环境变量读取。
+- [DeepSeek API](https://api-docs.deepseek.com/zh-cn/)：OpenAI-compatible 流式接口；用户可在 `deepseek-v4-flash` 与 `deepseek-v4-pro` 之间选择，API Key 只从 `MIO_LLM_API_KEY` 环境变量读取。
 - Music Mizu：使用服务器专用 bare clone 和临时 worktree，不接触任何桌面 checkout。
 
 上传文件先进入仓库外的 `data\quarantine`，经 SHA-256、文件头、FFprobe 和可选 Windows Defender 检查后才进入任务。模型仅能看到清洗后的文本元数据；音乐字节、服务器路径、Git 参数和密钥永不进入提示词。
@@ -46,17 +46,17 @@ Set-Location frontend
 npm run dev
 ```
 
-## Kimi 配置
+## DeepSeek 配置
 
 只在旧电脑本地的 `C:\MioCore\app\.env` 中填写：
 
 ```dotenv
 MIO_LLM_API_KEY=你的密钥
-MIO_LLM_BASE_URL=https://api.kimi.com/coding/v1
-MIO_LLM_MODEL=kimi-for-coding
+MIO_LLM_BASE_URL=https://api.deepseek.com
+MIO_LLM_MODEL=deepseek-v4-flash
 ```
 
-不要把真实 Key 发到聊天、写入前端或提交 Git。Kimi 不可用、超时、429 或断网时，聊天会显示降级提示，但已经进入队列的确定性音乐流水线仍可运行。
+不要把真实 Key 发到聊天、写入前端或提交 Git。DeepSeek 不可用、超时、429 或断网时，聊天会显示降级提示，但已经进入队列的确定性音乐流水线仍可运行。Flash 是默认的快速经济模式，用户可在聊天输入区切换到 Pro。
 
 ## Deploy Key
 

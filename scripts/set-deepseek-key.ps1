@@ -26,7 +26,7 @@ if (-not (Test-Path -LiteralPath $envPath -PathType Leaf)) {
     throw "Mio Core configuration was not found: $envPath"
 }
 
-$secure = Read-Host 'Paste Kimi API Key' -AsSecureString
+$secure = Read-Host 'Paste DeepSeek API Key' -AsSecureString
 $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
 try {
     $key = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
@@ -62,7 +62,7 @@ try {
         'Running',
         [TimeSpan]::FromSeconds(20)
     )
-    Write-Host 'Kimi API Key saved. Mio Core services restarted.' -ForegroundColor Green
+    Write-Host 'DeepSeek API Key saved. Mio Core services restarted.' -ForegroundColor Green
 } finally {
     if ($bstr -ne [IntPtr]::Zero) {
         [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)

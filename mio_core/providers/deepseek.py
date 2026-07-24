@@ -12,17 +12,25 @@ from mio_core import __version__
 from mio_core.config import Settings
 from mio_core.providers.base import ChatChunk, LLMProvider, ProviderCapabilities
 
+DEEPSEEK_MODELS = frozenset({"deepseek-v4-flash", "deepseek-v4-pro"})
 
-class KimiCodingProvider(LLMProvider):
+
+class DeepSeekProvider(LLMProvider):
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self._global = asyncio.Semaphore(settings.llm_global_concurrency)
         self._users: defaultdict[str, asyncio.Semaphore] = defaultdict(lambda: asyncio.Semaphore(1))
-        self._capabilities: ProviderCapabilities | None = None
+        self._capabilities: dict[str, ProviderCapabilities] = {}
 
     @property
     def endpoint(self) -> str:
         return f"{self.settings.llm_base_url.rstrip('/')}/chat/completions"
+
+    def selected_model(self, model: str | None) -> str:
+        selected = model or self.settings.llm_model
+        if selected not in DEEPSEEK_MODELS:
+            raise ValueError("不支持的 DeepSeek 模型")
+        return selected
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -31,69 +39,86 @@ class KimiCodingProvider(LLMProvider):
             "User-Agent": f"mio-core/{__version__}",
         }
 
-    async def health(self) -> bool:
+    async def health(self, model: str | None = None) -> bool:
         if not self.settings.llm_api_key:
             return False
         try:
             async for _chunk in self.stream_chat(
-                [{"role": "user", "content": "Reply with OK."}], [], "_health"
+                [{"role": "user", "content": "Reply with OK."}],
+                [],
+                "_health",
+                model,
             ):
                 return True
-        except (httpx.HTTPError, TimeoutError):
+        except (httpx.HTTPError, TimeoutError, ValueError):
             return False
         return False
 
-    async def capabilities(self) -> ProviderCapabilities:
-        if self._capabilities is None:
-            if not self.settings.llm_api_key:
-                self._capabilities = ProviderCapabilities(
-                    streaming=False, tool_calls=False, model=self.settings.llm_model
-                )
-                return self._capabilities
-            body = {
-                "model": self.settings.llm_model,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": "Capability probe: reply OK. Do not call any tool.",
-                    }
-                ],
-                "tools": [
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "mio_noop",
-                            "description": "No-op used only to test protocol acceptance.",
-                            "parameters": {"type": "object", "properties": {}},
-                        },
-                    }
-                ],
-                "max_tokens": 2,
-                "stream": False,
-            }
-            try:
-                async with httpx.AsyncClient(timeout=httpx.Timeout(15, connect=8)) as client:
-                    response = await client.post(self.endpoint, headers=self._headers(), json=body)
-                self._capabilities = ProviderCapabilities(
-                    streaming=True,
-                    tool_calls=response.status_code < 400,
-                    model=self.settings.llm_model,
-                )
-            except httpx.HTTPError:
-                self._capabilities = ProviderCapabilities(
-                    streaming=True, tool_calls=False, model=self.settings.llm_model
-                )
-        return self._capabilities
+    async def capabilities(self, model: str | None = None) -> ProviderCapabilities:
+        selected = self.selected_model(model)
+        if selected in self._capabilities:
+            return self._capabilities[selected]
+        if not self.settings.llm_api_key:
+            capability = ProviderCapabilities(
+                streaming=False,
+                tool_calls=False,
+                model=selected,
+            )
+            self._capabilities[selected] = capability
+            return capability
+        body = {
+            "model": selected,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Capability probe: reply OK. Do not call any tool.",
+                }
+            ],
+            "tools": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "mio_noop",
+                        "description": "No-op used only to test protocol acceptance.",
+                        "parameters": {"type": "object", "properties": {}},
+                    },
+                }
+            ],
+            "max_tokens": 2,
+            "stream": False,
+        }
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(15, connect=8)) as client:
+                response = await client.post(self.endpoint, headers=self._headers(), json=body)
+            capability = ProviderCapabilities(
+                streaming=True,
+                tool_calls=response.status_code < 400,
+                model=selected,
+            )
+        except httpx.HTTPError:
+            capability = ProviderCapabilities(
+                streaming=True,
+                tool_calls=False,
+                model=selected,
+            )
+        self._capabilities[selected] = capability
+        return capability
 
     async def stream_chat(
-        self, messages: list[dict[str, Any]], tools: list[dict[str, Any]], user_id: str
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        user_id: str,
+        model: str | None = None,
     ) -> AsyncIterator[ChatChunk]:
         if not self.settings.llm_api_key:
             raise RuntimeError("MIO_LLM_API_KEY 尚未配置")
+        selected = self.selected_model(model)
         body: dict[str, Any] = {
-            "model": self.settings.llm_model,
+            "model": selected,
             "messages": messages,
             "stream": True,
+            "stream_options": {"include_usage": True},
         }
         if tools:
             body["tools"] = tools
@@ -104,7 +129,10 @@ class KimiCodingProvider(LLMProvider):
                 for attempt in range(4):
                     tool_calls: dict[int, dict[str, Any]] = {}
                     async with client.stream(
-                        "POST", self.endpoint, headers=self._headers(), json=body
+                        "POST",
+                        self.endpoint,
+                        headers=self._headers(),
+                        json=body,
                     ) as response:
                         if response.status_code == 429 and attempt < 3:
                             retry_after = min(float(response.headers.get("retry-after", "1")), 15)

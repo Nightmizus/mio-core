@@ -3,12 +3,14 @@ import asyncio
 import httpx
 
 from mio_core.config import Settings
-from mio_core.providers.kimi import KimiCodingProvider
+from mio_core.providers.deepseek import DeepSeekProvider
 
 
-def test_kimi_stream_parses_openai_events(monkeypatch, tmp_path):
+def test_deepseek_stream_parses_openai_events(monkeypatch, tmp_path):
     async def handler(request: httpx.Request):
         assert request.headers["user-agent"].startswith("mio-core/")
+        assert request.url == "https://api.deepseek.com/chat/completions"
+        assert b'"model":"deepseek-v4-pro"' in request.content
         content = (
             'data: {"choices":[{"delta":{"content":"水"},"finish_reason":null}]}\n\n'
             'data: {"choices":[{"delta":{"content":"音"},"finish_reason":"stop"}]}\n\n'
@@ -23,7 +25,7 @@ def test_kimi_stream_parses_openai_events(monkeypatch, tmp_path):
         "AsyncClient",
         lambda **kwargs: original(transport=transport, **kwargs),
     )
-    provider = KimiCodingProvider(
+    provider = DeepSeekProvider(
         Settings(
             data_dir=tmp_path / "data",
             workspaces_dir=tmp_path / "workspaces",
@@ -35,7 +37,10 @@ def test_kimi_stream_parses_openai_events(monkeypatch, tmp_path):
         return [
             chunk.text
             async for chunk in provider.stream_chat(
-                [{"role": "user", "content": "hi"}], [], "u1"
+                [{"role": "user", "content": "hi"}],
+                [],
+                "u1",
+                "deepseek-v4-pro",
             )
         ]
 
@@ -43,7 +48,7 @@ def test_kimi_stream_parses_openai_events(monkeypatch, tmp_path):
     assert "".join(chunks) == "水音"
 
 
-def test_kimi_stream_reassembles_tool_calls(monkeypatch, tmp_path):
+def test_deepseek_stream_reassembles_tool_calls(monkeypatch, tmp_path):
     async def handler(_request: httpx.Request):
         content = (
             'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1",'
@@ -62,7 +67,7 @@ def test_kimi_stream_reassembles_tool_calls(monkeypatch, tmp_path):
         "AsyncClient",
         lambda **kwargs: original(transport=transport, **kwargs),
     )
-    provider = KimiCodingProvider(
+    provider = DeepSeekProvider(
         Settings(
             data_dir=tmp_path / "data",
             workspaces_dir=tmp_path / "workspaces",

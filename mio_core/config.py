@@ -24,8 +24,8 @@ class Settings(BaseSettings):
     secure_cookies: bool = False
 
     llm_api_key: str = ""
-    llm_base_url: str = "https://api.kimi.com/coding/v1"
-    llm_model: str = "kimi-for-coding"
+    llm_base_url: str = "https://api.deepseek.com"
+    llm_model: str = "deepseek-v4-flash"
     llm_timeout_seconds: float = 60.0
     llm_global_concurrency: int = 2
 

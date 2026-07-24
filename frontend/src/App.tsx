@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { api, Job, sendChat, setCsrf, uploadAudio, User } from "./api";
+import { api, ChatModel, Job, sendChat, setCsrf, uploadAudio, User } from "./api";
 
 type Conversation = { id: string; title: string };
 type Message = { id?: string; role: "user" | "assistant"; content: string };
@@ -105,6 +105,10 @@ function Workspace({ user, onLogout }: { user: User; onLogout: () => void }) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [activity, setActivity] = useState<Activity[]>([]);
   const [adminJobs, setAdminJobs] = useState<Job[]>([]);
+  const [chatModel, setChatModel] = useState<ChatModel>(() => {
+    const saved = localStorage.getItem("mio-chat-model");
+    return saved === "deepseek-v4-pro" ? saved : "deepseek-v4-flash";
+  });
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
@@ -134,7 +138,7 @@ function Workspace({ user, onLogout }: { user: User; onLogout: () => void }) {
     setMessages((current) => [...current, { role: "user", content }, { role: "assistant", content: "" }]);
     setBusy(true);
     try {
-      await sendChat(conversation.id, content, (delta) => {
+      await sendChat(conversation.id, content, chatModel, (delta) => {
         setMessages((current) => {
           const next = [...current];
           next[next.length - 1] = { role: "assistant", content: next[next.length - 1].content + delta };
@@ -178,6 +182,11 @@ function Workspace({ user, onLogout }: { user: User; onLogout: () => void }) {
     onLogout();
   }
 
+  function chooseModel(model: ChatModel) {
+    setChatModel(model);
+    localStorage.setItem("mio-chat-model", model);
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -202,13 +211,25 @@ function Workspace({ user, onLogout }: { user: User; onLogout: () => void }) {
               {!!jobs.length && <aside className="jobs"><h2>发布队列</h2>{jobs.map((job) => <JobCard key={job.id} job={job} onChanged={(next) => setJobs((items) => items.map((item) => item.id === next.id ? next : item))} />)}</aside>}
             </section>
             {notice && <div className="notice" role="status">{notice}<button onClick={() => setNotice("")}>×</button></div>}
-            <form className="composer" onSubmit={submitMessage}><textarea name="message" rows={1} placeholder="问 Mio，或告诉她你想怎样整理音乐…" /><button className="primary" disabled={busy}>发送</button></form>
+            <form className="composer" onSubmit={submitMessage}>
+              <textarea name="message" rows={1} placeholder="问 Mio，或告诉她你想怎样整理音乐…" />
+              <label className="model-picker">
+                <span>模型</span>
+                <select value={chatModel} onChange={(event) => chooseModel(event.target.value as ChatModel)}>
+                  <option value="deepseek-v4-flash">Flash · 快速</option>
+                  <option value="deepseek-v4-pro">Pro · 深入</option>
+                </select>
+              </label>
+              <button className="primary" disabled={busy}>发送</button>
+            </form>
           </>
         )}
         {tab === "activity" && <ActivityView items={activity} />}
         {tab === "admin" && <AdminView jobs={adminJobs} onRefresh={() => api<Job[]>("/api/admin/jobs").then(setAdminJobs)} />}
       </main>
-      <img className="standee" src="/mio-standee.png" alt="" />
+      <aside className="mascot-rail" aria-hidden="true">
+        <img className="standee" src="/mio-standee.png" alt="" />
+      </aside>
     </div>
   );
 }

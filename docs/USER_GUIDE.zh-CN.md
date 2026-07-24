@@ -38,7 +38,7 @@ Mio Core 是 Music Mizu 的受控运营后端，不是一个可以任意执行 S
 它提供：
 
 - 邀请制账号和私人聊天；
-- Kimi 流式聊天；
+- DeepSeek 流式聊天；
 - 8 MiB 分块、断点续传的音乐上传；
 - 文件头、SHA-256、FFprobe 和可选 Windows Defender 校验；
 - 音频标签与内嵌封面读取；
@@ -53,7 +53,7 @@ Mio Core 是 Music Mizu 的受控运营后端，不是一个可以任意执行 S
 - 面向用户或模型的 Shell；
 - 任意文件路径读写；
 - 任意 Git 仓库、分支或参数；
-- 向 Kimi 发送音乐文件内容、服务器路径、Deploy Key 或其他密钥；
+- 向 DeepSeek 发送音乐文件内容、服务器路径、Deploy Key 或其他密钥；
 - force push。
 
 ## 2. 组件、端口和数据流
@@ -91,7 +91,7 @@ flowchart LR
     K --> L["EdgeOne 自动部署 Music Mizu"]
 ```
 
-上传和发布是确定性流水线。Kimi 可以解释状态，或在协议支持时调用只读的任务查询
+上传和发布是确定性流水线。DeepSeek 可以解释状态，或在协议支持时调用只读的任务查询
 工具，但不能决定磁盘路径、命令或 Git 参数。
 
 ## 3. 部署前准备
@@ -119,7 +119,7 @@ flowchart LR
 - [FFmpeg 下载](https://ffmpeg.org/download.html)
 - [Faircamp Windows 指南](https://simonrepp.com/faircamp/windows.html)
 - [WinSW Releases](https://github.com/winsw/winsw/releases)
-- [Kimi Code API 文档](https://www.kimi.com/code/docs/)
+- [DeepSeek API 文档](https://api-docs.deepseek.com/zh-cn/)
 
 安装 Git、Python 和 Node.js 时应选择“所有用户”，否则低权限服务账号可能找不到命令。
 
@@ -248,7 +248,7 @@ Invoke-RestMethod http://127.0.0.1:8787/api/health
 }
 ```
 
-`llmConfigured` 只表示服务器读取到了非空 API Key，不代表 Kimi 网络请求已经验证成功。
+`llmConfigured` 只表示服务器读取到了非空 API Key，不代表 DeepSeek 网络请求已经验证成功。
 实际连接会在第一次聊天时验证。
 
 打开 <http://127.0.0.1:8787>，完成首次管理员初始化。
@@ -285,9 +285,9 @@ MIO_SESSION_SECRET=替换为至少32字符的高熵随机值
 MIO_BOOTSTRAP_TOKEN=替换为另一个一次性随机值
 MIO_SECURE_COOKIES=true
 
-MIO_LLM_API_KEY=在服务器本地填写真实KimiKey
-MIO_LLM_BASE_URL=https://api.kimi.com/coding/v1
-MIO_LLM_MODEL=kimi-for-coding
+MIO_LLM_API_KEY=在服务器本地填写真实DeepSeekKey
+MIO_LLM_BASE_URL=https://api.deepseek.com
+MIO_LLM_MODEL=deepseek-v4-flash
 
 MIO_MUSIC_REMOTE=git@github.com:shizwd/musicmizu.git
 MIO_MUSIC_BRANCH=main
@@ -317,11 +317,11 @@ MIO_ENABLE_DEFENDER_SCAN=true
 | `MIO_SESSION_SECRET` | 独立随机值 | HMAC 会话和邀请令牌 |
 | `MIO_BOOTSTRAP_TOKEN` | 一次性随机值 | 只用于第一个管理员 |
 | `MIO_SECURE_COOKIES` | 公网必须 `true` | 仅通过 HTTPS 发送登录 Cookie |
-| `MIO_LLM_API_KEY` | 仅服务器本地填写 | Kimi API Key |
-| `MIO_LLM_BASE_URL` | `https://api.kimi.com/coding/v1` | OpenAI-compatible Base URL |
-| `MIO_LLM_MODEL` | `kimi-for-coding` | 当前实现默认模型 |
-| `MIO_LLM_TIMEOUT_SECONDS` | `60` | 单次 Kimi 请求超时 |
-| `MIO_LLM_GLOBAL_CONCURRENCY` | `2` | 全局 Kimi 并发上限 |
+| `MIO_LLM_API_KEY` | 仅服务器本地填写 | DeepSeek API Key |
+| `MIO_LLM_BASE_URL` | `https://api.deepseek.com` | OpenAI-compatible Base URL |
+| `MIO_LLM_MODEL` | `deepseek-v4-flash` | 默认模型；用户可在聊天区切换 Pro |
+| `MIO_LLM_TIMEOUT_SECONDS` | `60` | 单次 DeepSeek 请求超时 |
+| `MIO_LLM_GLOBAL_CONCURRENCY` | `2` | 全局 DeepSeek 并发上限 |
 | `MIO_MUSIC_REMOTE` | Music Mizu SSH URL | Worker 唯一允许推送的目标 |
 | `MIO_MUSIC_BRANCH` | `main` | EdgeOne 监听的分支 |
 | `MIO_GIT_SSH_COMMAND` | 专用私钥与严格主机检查 | 非交互 Git SSH |
@@ -340,8 +340,8 @@ MIO_ENABLE_DEFENDER_SCAN=true
 - 8 MiB/分块；
 - 500 MiB/文件；
 - 每位用户同时处于上传中的文件合计 5 GiB；
-- 每位用户同时一个 Kimi 请求；
-- 全局同时两个 Kimi 请求；
+- 每位用户同时一个 DeepSeek 请求；
+- 全局同时两个 DeepSeek 请求；
 - 全局一个 Git 发布任务；
 - 外部命令默认 900 秒超时；
 - 登录会话有效期 30 天；
@@ -352,24 +352,24 @@ MIO_ENABLE_DEFENDER_SCAN=true
 配置。不要单独修改 `MIO_CHUNK_SIZE`：浏览器前端当前固定使用 8 MiB，前后端不一致会
 导致分块数量校验失败。调整任何限制后都应重新运行测试和完整上传验证。
 
-### 5.3 Kimi 配置注意事项
+### 5.3 DeepSeek 配置注意事项
 
 Mio Core 使用：
 
 ```text
-Base URL: https://api.kimi.com/coding/v1
-Endpoint: https://api.kimi.com/coding/v1/chat/completions
-Model: kimi-for-coding
+Base URL: https://api.deepseek.com
+Endpoint: https://api.deepseek.com/chat/completions
+Models: deepseek-v4-flash, deepseek-v4-pro
 User-Agent: mio-core/<version>
 ```
 
-服务启动后的第一次聊天会按协议能力决定是否提供受控只读工具。即使 Kimi 不支持工具、
+服务启动后的第一次聊天会按协议能力决定是否提供受控只读工具。即使 DeepSeek 不支持工具、
 发生 429、超时或断网，已进入 Worker 的音乐发布任务仍能独立运行。
 
-Kimi 官方将 Kimi Code 主要定位为编程 Agent 和开发工具接入，并为产品集成、团队用量
-管理另行提供开放平台。把聊天能力开放给多位受邀用户前，请再次确认当前账号、订阅和
-API Key 的使用方式符合最新服务条款与配额政策；不符合时应实现新的 `LLMProvider`，
-而不是伪装客户端或绕过限制。
+DeepSeek V4 Flash 偏向速度与成本，作为默认模型；V4 Pro 偏向复杂理解与深入回答。
+用户可以在每次发送消息前切换，选择会保存在当前浏览器中。把聊天能力开放给多位受邀
+用户前，请确认当前账号、余额和 API Key 的使用方式符合最新服务条款与配额政策；不符合
+时应实现新的 `LLMProvider`，而不是伪装客户端或绕过限制。
 
 不要：
 
@@ -377,9 +377,9 @@ API Key 的使用方式符合最新服务条款与配额政策；不符合时应
 - 把 Key 提交到 Git；
 - 在聊天中粘贴 Key；
 - 修改 User-Agent 冒充其他客户端；
-- 让服务账号和日常个人 Kimi Key 共用不必要的权限。
+- 让服务账号和日常个人 DeepSeek Key 共用不必要的权限。
 
-修改 Kimi 配置后需要重启 `MioWeb`。
+修改 DeepSeek 配置后需要重启 `MioWeb`。
 
 ## 6. 配置 Music Mizu Deploy Key
 
@@ -682,10 +682,10 @@ CSRF Token。公网部署必须启用 HTTPS 和 `MIO_SECURE_COOKIES=true`。
 - 让 Mio 通过受控只读工具查询自己的近期任务。
 
 对话按用户隔离，其他成员和普通管理员界面不会展示私人聊天。为了生成回复，最近最多
-30 条用户/助手消息会发送给已配置的 Kimi API。不要在聊天中发送不希望交给模型服务商
+30 条用户/助手消息会发送给已配置的 DeepSeek API。不要在聊天中发送不希望交给模型服务商
 处理的敏感内容。
 
-聊天不可用不等于发布不可用。Kimi 断网或限流时，Worker 仍能继续处理已经排队的音乐。
+聊天不可用不等于发布不可用。DeepSeek 断网或限流时，Worker 仍能继续处理已经排队的音乐。
 
 ### 10.3 上传音乐
 
@@ -887,7 +887,7 @@ GET https://mio.example.com/api/health
 ```
 
 健康接口只验证 Web 和数据库基本可用，不验证 Worker、Git、Faircamp、FFmpeg、Defender
-或 Kimi 的真实端到端状态。生产监控还应观察 Windows 服务和最近任务。
+或 DeepSeek 的真实端到端状态。生产监控还应观察 Windows 服务和最近任务。
 
 ## 13. 备份、恢复和升级
 
@@ -1069,13 +1069,13 @@ MIO_PUBLIC_URL=https://你的真实域名
 
 写入 `C:\MioCore\app\.env`，重启 Web，然后重新生成邀请。旧链接中的地址不会自动变化。
 
-#### Kimi 聊天失败，但上传可以工作
+#### DeepSeek 聊天失败，但上传可以工作
 
 检查：
 
 - `MIO_LLM_API_KEY` 是否为空、过期或复制了多余空格；
-- Base URL 是否是 `https://api.kimi.com/coding/v1`；
-- 模型是否为账号可用的 `kimi-for-coding`；
+- Base URL 是否是 `https://api.deepseek.com`；
+- 模型是否为账号可用的 `deepseek-v4-flash` 或 `deepseek-v4-pro`；
 - 服务器时间和 TLS 是否正常；
 - 是否收到 429；
 - 反代 `proxy_read_timeout` 是否至少 75 秒；
@@ -1212,7 +1212,7 @@ Worker 启动时会恢复处于分析、导入、构建、提交或推送中的�
 | `POST` | `/api/conversations` | 新建私人对话 |
 | `GET` | `/api/conversations` | 列出自己的对话 |
 | `GET` | `/api/conversations/{id}` | 读取自己的消息 |
-| `POST` | `/api/conversations/{id}/messages` | SSE 流式 Kimi 回复 |
+| `POST` | `/api/conversations/{id}/messages` | SSE 流式 DeepSeek 回复 |
 
 ### 15.4 管理员
 
@@ -1235,19 +1235,19 @@ Worker 启动时会恢复处于分析、导入、构建、提交或推送中的�
 
 | 数据 | 可见范围 |
 | --- | --- |
-| 私人聊天 | 当前用户、数据库管理员、Kimi API 处理链路 |
+| 私人聊天 | 当前用户、数据库管理员、DeepSeek API 处理链路 |
 | 原始音频和封面 | 服务器、Worker、最终 Music Mizu 仓库 |
 | 上传/任务状态 | 上传者；管理员可查看任务和错误 |
 | 成功发布动态 | 所有已登录成员 |
-| Kimi API Key | 仅服务器 `.env` 和进程内存 |
+| DeepSeek API Key | 仅服务器 `.env` 和进程内存 |
 | Music Mizu 私钥 | 仅服务器 `data\keys` 和 Git SSH 子进程 |
 
 “私人聊天隔离”指网页和 API 的成员间隔离，不意味着服务器所有者无法读取 SQLite，
-也不意味着消息不发送给已配置的 Kimi 服务。
+也不意味着消息不发送给已配置的 DeepSeek 服务。
 
 ### 16.2 模型边界
 
-发送给 Kimi 的内容包括：
+发送给 DeepSeek 的内容包括：
 
 - 系统角色说明；
 - 当前用户最近最多 30 条聊天消息；
@@ -1259,7 +1259,7 @@ Worker 启动时会恢复处于分析、导入、构建、提交或推送中的�
 - 本机文件路径；
 - Shell 命令；
 - Git 参数；
-- Kimi Key；
+- DeepSeek Key；
 - Deploy Key。
 
 音乐标签不能改变系统提示或获得工具权限。
@@ -1268,7 +1268,7 @@ Worker 启动时会恢复处于分析、导入、构建、提交或推送中的�
 
 怀疑泄露时：
 
-1. 在 Kimi 控制台撤销旧 Key，生成新 Key；
+1. 在 DeepSeek 控制台撤销旧 Key，生成新 Key；
 2. 替换 `.env` 并重启 Web；
 3. 在 Music Mizu 移除旧 Deploy Key，生成新的专用密钥；
 4. 替换私钥、`known_hosts` 配置并重启 Worker；
@@ -1286,7 +1286,7 @@ Mio Core 不会判断上传者是否拥有音乐的版权或公开传播权。�
 - 明确发布政策；
 - 在发布前确认版权和授权；
 - 准备下架与回滚流程；
-- 遵守 Kimi、GitHub、EdgeOne、隧道服务和当地法律的条款。
+- 遵守 DeepSeek、GitHub、EdgeOne、隧道服务和当地法律的条款。
 
 ## 17. 上线验收清单
 
@@ -1304,7 +1304,7 @@ Mio Core 不会判断上传者是否拥有音乐的版权或公开传播权。�
 - [ ] `MIO_SESSION_SECRET` 和 `MIO_BOOTSTRAP_TOKEN` 是不同的高熵随机值。
 - [ ] `MIO_PUBLIC_URL` 是真实 HTTPS 根域名。
 - [ ] `MIO_SECURE_COOKIES=true`。
-- [ ] Kimi Key 只存在于服务器 `.env`。
+- [ ] DeepSeek Key 只存在于服务器 `.env`。
 - [ ] Faircamp、FFmpeg、FFprobe 使用明确路径。
 - [ ] `.env` 被 Git 忽略。
 
@@ -1329,7 +1329,7 @@ Mio Core 不会判断上传者是否拥有音乐的版权或公开传播权。�
 
 - [ ] 首个管理员初始化成功，随后清空 `MIO_BOOTSTRAP_TOKEN` 并重启。
 - [ ] 成员邀请只能使用一次。
-- [ ] Kimi 聊天流式输出正常。
+- [ ] DeepSeek 聊天流式输出正常。
 - [ ] FLAC/MP3 测试上传成功。
 - [ ] 缺标签和缺封面流程能够补充并继续。
 - [ ] Git 提交出现在 Music Mizu `main`。
@@ -1343,4 +1343,4 @@ Mio Core 不会判断上传者是否拥有音乐的版权或公开传播权。�
 - [ ] 已在隔离位置验证恢复步骤。
 - [ ] `.env` 和隧道配置有独立加密备份。
 - [ ] 有磁盘空间、服务状态和 HTTPS 证书监控。
-- [ ] 管理员知道 Kimi Key、Deploy Key 和 Session Secret 的轮换流程。
+- [ ] 管理员知道 DeepSeek Key、Deploy Key 和 Session Secret 的轮换流程。

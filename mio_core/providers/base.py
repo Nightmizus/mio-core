@@ -24,14 +24,18 @@ class ChatChunk:
 class LLMProvider(ABC):
     @abstractmethod
     async def stream_chat(
-        self, messages: list[dict[str, Any]], tools: list[dict[str, Any]], user_id: str
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        user_id: str,
+        model: str | None = None,
     ) -> AsyncIterator[ChatChunk]:
         raise NotImplementedError
 
     @abstractmethod
-    async def health(self) -> bool:
+    async def health(self, model: str | None = None) -> bool:
         raise NotImplementedError
 
     @abstractmethod
-    async def capabilities(self) -> ProviderCapabilities:
+    async def capabilities(self, model: str | None = None) -> ProviderCapabilities:
         raise NotImplementedError

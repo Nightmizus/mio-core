@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, field_validator
 
 from mio_core.models import Role
@@ -46,6 +48,7 @@ class UploadCreateRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     content: str = Field(min_length=1, max_length=12000)
+    model: Literal["deepseek-v4-flash", "deepseek-v4-pro"] = "deepseek-v4-flash"
 
 
 class JobAnswers(BaseModel):

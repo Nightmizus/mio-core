@@ -63,11 +63,22 @@ describe("api client", () => {
         controller.close();
       }
     });
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(body, { status: 200 })));
+    const fetchMock = vi.fn().mockResolvedValue(new Response(body, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
     const deltas: string[] = [];
 
-    await sendChat("conversation-1", "你好", (text) => deltas.push(text));
+    await sendChat(
+      "conversation-1",
+      "你好",
+      "deepseek-v4-pro",
+      (text) => deltas.push(text)
+    );
 
     expect(deltas).toEqual(["你", "好"]);
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(String(init.body))).toEqual({
+      content: "你好",
+      model: "deepseek-v4-pro"
+    });
   });
 });

@@ -1,3 +1,3 @@
-from mio_core.providers.kimi import KimiCodingProvider
+from mio_core.providers.deepseek import DeepSeekProvider
 
-__all__ = ["KimiCodingProvider"]
+__all__ = ["DeepSeekProvider"]

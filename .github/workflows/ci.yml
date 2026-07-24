@@ -31,7 +31,7 @@ jobs:
       - name: Reject committed secrets
         shell: pwsh
         run: |
-          $matches = git grep -n -E 'sk-kimi-[A-Za-z0-9_-]{12,}|-----BEGIN (OPENSSH|RSA) PRIVATE KEY-----' -- ':!*.example' ':!README.md'
+          $matches = git grep -n -E 'sk-[A-Za-z0-9_-]{20,}|-----BEGIN (OPENSSH|RSA) PRIVATE KEY-----' -- ':!*.example' ':!README.md'
           if ($LASTEXITCODE -eq 0) { $matches; throw 'Potential secret committed.' }
           if ($LASTEXITCODE -ne 1) { throw 'git grep failed.' }
           exit 0
